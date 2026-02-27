@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slippage Calculator</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --input: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --accent: #38bdf8;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .calc-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            flex: 1;
+            min-width: 320px;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        h2 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--accent); }
+
+        .settings-btn {
+            position: absolute; top: 20px; right: 20px;
+            cursor: pointer; background: none; border: none;
+            font-size: 1.2rem; color: var(--muted);
+        }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--muted); }
+        
+        input {
+            width: 100%; padding: 12px;
+            background: var(--input); border: 1px solid var(--border);
+            border-radius: 6px; color: white; font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .settings-panel {
+            display: none; background: rgba(0,0,0,0.2);
+            padding: 15px; border-radius: 8px; margin-bottom: 20px;
+        }
+        .settings-panel.active { display: block; }
+
+        .output-container {
+            margin-top: 25px; padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .output-row {
+            display: flex; justify-content: space-between;
+            margin-bottom: 12px; font-size: 0.95rem;
+        }
+
+        .copy-val {
+            color: var(--accent); font-weight: bold;
+            cursor: pointer; transition: all 0.2s;
+            padding: 2px 6px; border-radius: 4px;
+        }
+        .copy-val:hover { background: rgba(56, 189, 248, 0.1); }
+        .copied { color: #4ade80 !important; transform: scale(1.1); }
+
+        @media (max-width: 600px) { .container { flex-direction: column; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="calc-card">
+        <button class="settings-btn" onclick="toggleSettings('in-set')">⚙️</button>
+        <h2>Indian Market (₹)</h2>
+        
+        <div id="in-set" class="settings-panel">
+            <div class="input-group"><label>Slippage %</label><input type="number" id="in-slip" value="1.5" step="0.1" oninput="calcIn()"></div>
+            <div class="input-group"><label>R Value</label><input type="number" id="in-r" value="1000" oninput="calcIn()"></div>
+        </div>
+
+        <div class="input-group"><label>Entry Price (₹)</label><input type="number" id="in-p" placeholder="0" oninput="calcIn()"></div>
+        <div class="input-group"><label>Quantity</label><input type="number" id="in-q" placeholder="0" oninput="calcIn()"></div>
+
+        <div class="output-container">
+            <div class="output-row">
+                <span>Slippage:</span>
+                <span class="copy-val" id="in-out-cash" onclick="copyThis(this)">₹0.00</span>
+            </div>
+            <div class="output-row">
+                <span>Slippage in terms of R:</span>
+                <span class="copy-val" id="in-out-r" onclick="copyThis(this)">0.00 R</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="calc-card">
+        <button class="settings-btn" onclick="toggleSettings('cr-set')">⚙️</button>
+        <h2>Crypto Market (USDT)</h2>
+
+        <div id="cr-set" class="settings-panel">
+            <div class="input-group"><label>Slippage %</label><input type="number" id="cr-slip" value="0.15" step="0.01" oninput="calcCr()"></div>
+            <div class="input-group"><label>R Value</label><input type="number" id="cr-r" value="10.2" step="0.1" oninput="calcCr()"></div>
+        </div>
+
+        <div class="input-group"><label>Entry Price (USDT)</label><input type="number" id="cr-p" placeholder="0" oninput="calcCr()"></div>
+        <div class="input-group"><label>Quantity</label><input type="number" id="cr-q" placeholder="0" oninput="calcCr()"></div>
+
+        <div class="output-container">
+            <div class="output-row">
+                <span>Slippage:</span>
+                <span class="copy-val" id="cr-out-cash" onclick="copyThis(this)">$0.00</span>
+            </div>
+            <div class="output-row">
+                <span>Slippage in terms of R:</span>
+                <span class="copy-val" id="cr-out-r" onclick="copyThis(this)">0.00 R</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSettings(id) { document.getElementById(id).classList.toggle('active'); }
+
+    function calcIn() {
+        const p = parseFloat(document.getElementById('in-p').value) || 0;
+        const q = parseFloat(document.getElementById('in-q').value) || 0;
+        const s = parseFloat(document.getElementById('in-slip').value) || 0;
+        const r = parseFloat(document.getElementById('in-r').value) || 1;
+        const res = (s/100) * p * q;
+        document.getElementById('in-out-cash').innerText = "₹" + res.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('in-out-r').innerText = (res / r).toFixed(2) + " R";
+    }
+
+    function calcCr() {
+        const p = parseFloat(document.getElementById('cr-p').value) || 0;
+        const q = parseFloat(document.getElementById('cr-q').value) || 0;
+        const s = parseFloat(document.getElementById('cr-slip').value) || 0;
+        const r = parseFloat(document.getElementById('cr-r').value) || 1;
+        const res = (s/100) * p * q;
+        document.getElementById('cr-out-cash').innerText = "$" + res.toFixed(2);
+        document.getElementById('cr-out-r').innerText = (res / r).toFixed(2) + " R";
+    }
+
+    function copyThis(el) {
+        const text = el.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            el.classList.add('copied');
+            setTimeout(() => el.classList.remove('copied'), 600);
+        });
+    }
+</script>
+
+</body>
+</html>
