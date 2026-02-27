@@ -3,174 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slippage Calculator</title>
+    <title>Advanced Trade & Net R Calculator</title>
     <style>
         :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --input: #334155;
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --accent: #38bdf8;
-            --border: #475569;
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc;
+            --accent: #38bdf8; --border: #334155; --input-bg: #0f172a;
+            --buy: #166534; --sell: #991b1b; --success: #4ade80; --gold: #f59e0b;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 15px; font-size: 14px;
         }
+
+        h2 { text-align: center; color: var(--accent); margin-bottom: 20px; font-size: 1.4rem; }
 
         .container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            max-width: 1000px;
-            width: 100%;
+            display: flex; flex-wrap: wrap; gap: 15px;
+            justify-content: center; max-width: 1100px; margin: 0 auto;
         }
 
-        .calc-card {
-            background: var(--card);
-            border-radius: 12px;
-            padding: 24px;
-            flex: 1;
-            min-width: 320px;
-            position: relative;
-            border: 1px solid var(--border);
+        .calculator-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 20px; flex: 1;
+            min-width: 330px; position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
-
-        h2 { margin: 0 0 20px 0; font-size: 1.2rem; color: var(--accent); }
 
         .settings-btn {
-            position: absolute; top: 20px; right: 20px;
+            position: absolute; top: 15px; right: 15px;
             cursor: pointer; background: none; border: none;
-            font-size: 1.2rem; color: var(--muted);
-        }
-
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 0.85rem; margin-bottom: 5px; color: var(--muted); }
-        
-        input {
-            width: 100%; padding: 12px;
-            background: var(--input); border: 1px solid var(--border);
-            border-radius: 6px; color: white; font-size: 1rem;
-            box-sizing: border-box;
+            font-size: 1.1rem; color: #94a3b8;
         }
 
         .settings-panel {
-            display: none; background: rgba(0,0,0,0.2);
-            padding: 15px; border-radius: 8px; margin-bottom: 20px;
+            display: none; background: rgba(0,0,0,0.3);
+            padding: 12px; border-radius: 8px; margin-bottom: 15px;
+            border: 1px dashed var(--border);
         }
         .settings-panel.active { display: block; }
 
-        .output-container {
-            margin-top: 25px; padding-top: 20px;
+        .input-group { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 4px; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+
+        select, input {
+            width: 100%; padding: 8px;
+            background-color: var(--input-bg); border: 1px solid var(--border);
+            color: white; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem;
+        }
+
+        .bg-buy { background-color: var(--buy) !important; }
+        .bg-sell { background-color: var(--sell) !important; }
+
+        .results {
+            margin-top: 15px; padding-top: 15px;
             border-top: 1px solid var(--border);
         }
 
-        .output-row {
+        .result-item {
             display: flex; justify-content: space-between;
-            margin-bottom: 12px; font-size: 0.95rem;
+            margin-bottom: 8px; align-items: center;
         }
 
-        .copy-val {
-            color: var(--accent); font-weight: bold;
-            cursor: pointer; transition: all 0.2s;
-            padding: 2px 6px; border-radius: 4px;
+        .value { 
+            font-weight: bold; color: var(--accent); cursor: pointer;
+            padding: 2px 4px; border-radius: 4px; transition: 0.2s;
         }
-        .copy-val:hover { background: rgba(56, 189, 248, 0.1); }
-        .copied { color: #4ade80 !important; transform: scale(1.1); }
+        .value:hover { background: rgba(56, 189, 248, 0.15); }
+        .copied { color: var(--success) !important; }
 
-        @media (max-width: 600px) { .container { flex-direction: column; } }
+        .net-r-row { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; color: var(--gold); }
+        .net-r-row .value { color: var(--gold); font-size: 1.1rem; }
+
+        details { cursor: pointer; margin-bottom: 10px; font-size: 0.85rem; color: var(--accent); }
+        details summary { margin-bottom: 8px; outline: none; list-style: none; }
+        details summary::before { content: "▼ "; font-size: 0.7rem; }
+        details[open] summary::before { content: "▲ "; }
+
+        @media (max-width: 768px) { .container { flex-direction: column; } }
     </style>
 </head>
-<body>
+<body onload="updateColors()">
 
-<div class="container">
-    <div class="calc-card">
-        <button class="settings-btn" onclick="toggleSettings('in-set')">⚙️</button>
-        <h2>Indian Market (₹)</h2>
-        
-        <div id="in-set" class="settings-panel">
-            <div class="input-group"><label>Slippage %</label><input type="number" id="in-slip" value="1.5" step="0.1" oninput="calcIn()"></div>
-            <div class="input-group"><label>R Value</label><input type="number" id="in-r" value="1000" oninput="calcIn()"></div>
+    <h2>Trade Net R Calculator</h2>
+
+    <div class="container">
+        <div class="calculator-card">
+            <button class="settings-btn" onclick="toggleSet('cry-set')">⚙️</button>
+            <h3>Crypto (USDT)</h3>
+            
+            <div id="cry-set" class="settings-panel">
+                <div class="input-group"><label>Slippage %</label><input type="number" id="cry-slip-pct" value="0.15" step="0.01" oninput="calcCrypto()"></div>
+                <div class="input-group"><label>R Value (Risk)</label><input type="number" id="cry-r-val" value="10.2" step="0.1" oninput="calcCrypto()"></div>
+            </div>
+
+            <div class="input-group">
+                <label>Side & Order Type</label>
+                <div style="display:flex; gap:5px;">
+                    <select id="cry-side" onchange="calcCrypto(); updateColors();" style="flex:1">
+                        <option value="buy">Buy</option><option value="sell">Sell</option>
+                    </select>
+                    <select id="cry-entry-type" onchange="calcCrypto()" style="flex:2">
+                        <option value="0.049">Taker (0.049%)</option>
+                        <option value="0.0196">Maker (0.0196%)</option>
+                        <option value="0.022">50/50 Split</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px">
+                <div class="input-group" style="flex:1"><label>Entry Price</label><input type="number" id="cry-price" placeholder="0.00" oninput="calcCrypto()"></div>
+                <div class="input-group" style="flex:1"><label>Quantity</label><input type="number" id="cry-qty" placeholder="0" oninput="calcCrypto()"></div>
+            </div>
+
+            <div class="input-group">
+                <label>Exit Type</label>
+                <select id="cry-exit-type" onchange="calcCrypto()">
+                    <option value="0.049">Taker (0.049%)</option>
+                    <option value="0">Zero (0%)</option>
+                    <option value="0.0196">Maker (0.0196%)</option>
+                    <option value="0.0044">Half Maker (0.0044%)</option>
+                    <option value="0.0176">Half Taker (0.0176%)</option>
+                </select>
+            </div>
+
+            <div class="input-group"><label>Gross R</label><input type="number" id="cry-gross-r" value="2" step="0.5" oninput="calcCrypto()"></div>
+
+            <div class="results">
+                <details>
+                    <summary>Cost Details (Slippage & Charges)</summary>
+                    <div class="result-item"><span>Total Charges:</span><span class="value" onclick="copyValue(this)" id="cry-res-charges">0.00</span></div>
+                    <div class="result-item"><span>Slippage:</span><span class="value" onclick="copyValue(this)" id="cry-res-slip">0.00</span></div>
+                    <div class="result-item"><span>Slippage in R:</span><span class="value" onclick="copyValue(this)" id="cry-res-slip-r">0.00 R</span></div>
+                </details>
+
+                <div class="result-item"><span>Total Cost in R:</span><span class="value" onclick="copyValue(this)" id="cry-res-cost-r">0.00 R</span></div>
+                <div class="result-item net-r-row"><span>NET R:</span><span class="value" onclick="copyValue(this)" id="cry-res-net-r">0.00 R</span></div>
+                
+                <div class="result-item"><span>Breakeven Price:</span><span class="value" onclick="copyValue(this)" id="cry-res-be">0.00</span></div>
+                <div class="result-item"><span>BE points from TP:</span><span class="value" onclick="copyValue(this)" id="cry-res-tp">0.00</span></div>
+                <div class="result-item"><span>BE points from SL:</span><span class="value" onclick="copyValue(this)" id="cry-res-sl">0.00</span></div>
+            </div>
         </div>
 
-        <div class="input-group"><label>Entry Price (₹)</label><input type="number" id="in-p" placeholder="0" oninput="calcIn()"></div>
-        <div class="input-group"><label>Quantity</label><input type="number" id="in-q" placeholder="0" oninput="calcIn()"></div>
+        <div class="calculator-card">
+            <button class="settings-btn" onclick="toggleSet('opt-set')">⚙️</button>
+            <h3>Nifty Options</h3>
 
-        <div class="output-container">
-            <div class="output-row">
-                <span>Slippage:</span>
-                <span class="copy-val" id="in-out-cash" onclick="copyThis(this)">₹0.00</span>
+            <div id="opt-set" class="settings-panel">
+                <div class="input-group"><label>Slippage %</label><input type="number" id="opt-slip-pct" value="1.5" step="0.1" oninput="calcOptions()"></div>
+                <div class="input-group"><label>R Value (Risk)</label><input type="number" id="opt-r-val" value="1000" oninput="calcOptions()"></div>
             </div>
-            <div class="output-row">
-                <span>Slippage in terms of R:</span>
-                <span class="copy-val" id="in-out-r" onclick="copyThis(this)">0.00 R</span>
+
+            <div class="input-group">
+                <label>Side</label>
+                <select id="opt-side" onchange="calcOptions(); updateColors();">
+                    <option value="sell">Sell</option><option value="buy">Buy</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px">
+                <div class="input-group" style="flex:1"><label>Entry Price</label><input type="number" id="opt-price" placeholder="0.00" oninput="calcOptions()"></div>
+                <div class="input-group" style="flex:1"><label>Quantity</label><input type="number" id="opt-qty" placeholder="0.00" oninput="calcOptions()"></div>
+            </div>
+
+            <div class="input-group"><label>Gross R</label><input type="number" id="opt-gross-r" value="3" step="0.5" oninput="calcOptions()"></div>
+
+            <div class="results">
+                <details>
+                    <summary>Cost Details (Slippage & Charges)</summary>
+                    <div class="result-item"><span>Total Charges:</span><span class="value" onclick="copyValue(this)" id="opt-res-charges">₹ 0.00</span></div>
+                    <div class="result-item"><span>Slippage:</span><span class="value" onclick="copyValue(this)" id="opt-res-slip">₹ 0.00</span></div>
+                    <div class="result-item"><span>Slippage in R:</span><span class="value" onclick="copyValue(this)" id="opt-res-slip-r">0.00 R</span></div>
+                </details>
+
+                <div class="result-item"><span>Total Cost in R:</span><span class="value" onclick="copyValue(this)" id="opt-res-cost-r">0.00 R</span></div>
+                <div class="result-item net-r-row"><span>NET R:</span><span class="value" onclick="copyValue(this)" id="opt-res-net-r">0.00 R</span></div>
+
+                <div class="result-item"><span>Breakeven Price:</span><span class="value" onclick="copyValue(this)" id="opt-res-be">₹ 0.00</span></div>
+                <div class="result-item"><span>BE points from TP:</span><span class="value" onclick="copyValue(this)" id="opt-res-tp">0.00</span></div>
+                <div class="result-item"><span>BE points from SL:</span><span class="value" onclick="copyValue(this)" id="opt-res-sl">0.00</span></div>
             </div>
         </div>
     </div>
 
-    <div class="calc-card">
-        <button class="settings-btn" onclick="toggleSettings('cr-set')">⚙️</button>
-        <h2>Crypto Market (USDT)</h2>
+    <script>
+        function toggleSet(id) { document.getElementById(id).classList.toggle('active'); }
 
-        <div id="cr-set" class="settings-panel">
-            <div class="input-group"><label>Slippage %</label><input type="number" id="cr-slip" value="0.15" step="0.01" oninput="calcCr()"></div>
-            <div class="input-group"><label>R Value</label><input type="number" id="cr-r" value="10.2" step="0.1" oninput="calcCr()"></div>
-        </div>
+        function copyValue(el) {
+            // regex removes currency symbols, spaces, and the letter R, keeping only numbers/dots/minuses
+            const cleanNum = el.innerText.replace(/[₹$R\s]/g, '');
+            navigator.clipboard.writeText(cleanNum).then(() => {
+                el.classList.add('copied');
+                setTimeout(() => el.classList.remove('copied'), 600);
+            });
+        }
 
-        <div class="input-group"><label>Entry Price (USDT)</label><input type="number" id="cr-p" placeholder="0" oninput="calcCr()"></div>
-        <div class="input-group"><label>Quantity</label><input type="number" id="cr-q" placeholder="0" oninput="calcCr()"></div>
+        function updateColors() {
+            const cs = document.getElementById('cry-side');
+            const os = document.getElementById('opt-side');
+            cs.className = cs.value === 'buy' ? 'bg-buy' : 'bg-sell';
+            os.className = os.value === 'buy' ? 'bg-buy' : 'bg-sell';
+        }
 
-        <div class="output-container">
-            <div class="output-row">
-                <span>Slippage:</span>
-                <span class="copy-val" id="cr-out-cash" onclick="copyThis(this)">$0.00</span>
-            </div>
-            <div class="output-row">
-                <span>Slippage in terms of R:</span>
-                <span class="copy-val" id="cr-out-r" onclick="copyThis(this)">0.00 R</span>
-            </div>
-        </div>
-    </div>
-</div>
+        function calcCrypto() {
+            const p = parseFloat(document.getElementById('cry-price').value) || 0;
+            const q = parseFloat(document.getElementById('cry-qty').value) || 0;
+            const side = document.getElementById('cry-side').value;
+            const rVal = parseFloat(document.getElementById('cry-r-val').value) || 1;
+            const slipPct = parseFloat(document.getElementById('cry-slip-pct').value) || 0;
+            const grossR = parseFloat(document.getElementById('cry-gross-r').value) || 0;
+            
+            const entryFee = parseFloat(document.getElementById('cry-entry-type').value) / 100;
+            const exitFee = parseFloat(document.getElementById('cry-exit-type').value) / 100;
 
-<script>
-    function toggleSettings(id) { document.getElementById(id).classList.toggle('active'); }
+            const charges = (q * p * entryFee) + (q * p * exitFee);
+            const slippage = (slipPct / 100) * p * q;
+            const totalCostR = (charges / rVal) + (slippage / rVal);
+            
+            const tpPoints = charges * 2;
+            const slPoints = q !== 0 ? charges / (q / 2) : 0;
+            let be = side === 'buy' ? p + (charges / q) : p - (charges / q);
 
-    function calcIn() {
-        const p = parseFloat(document.getElementById('in-p').value) || 0;
-        const q = parseFloat(document.getElementById('in-q').value) || 0;
-        const s = parseFloat(document.getElementById('in-slip').value) || 0;
-        const r = parseFloat(document.getElementById('in-r').value) || 1;
-        const res = (s/100) * p * q;
-        document.getElementById('in-out-cash').innerText = "₹" + res.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
-        document.getElementById('in-out-r').innerText = (res / r).toFixed(2) + " R";
-    }
+            document.getElementById('cry-res-charges').innerText = charges.toFixed(4);
+            document.getElementById('cry-res-slip').innerText = slippage.toFixed(2);
+            document.getElementById('cry-res-slip-r').innerText = (slippage / rVal).toFixed(2) + " R";
+            document.getElementById('cry-res-cost-r').innerText = totalCostR.toFixed(2) + " R";
+            document.getElementById('cry-res-net-r').innerText = (grossR - totalCostR).toFixed(2) + " R";
+            document.getElementById('cry-res-be').innerText = be.toFixed(4);
+            document.getElementById('cry-res-tp').innerText = tpPoints.toFixed(4);
+            document.getElementById('cry-res-sl').innerText = slPoints.toFixed(4);
+        }
 
-    function calcCr() {
-        const p = parseFloat(document.getElementById('cr-p').value) || 0;
-        const q = parseFloat(document.getElementById('cr-q').value) || 0;
-        const s = parseFloat(document.getElementById('cr-slip').value) || 0;
-        const r = parseFloat(document.getElementById('cr-r').value) || 1;
-        const res = (s/100) * p * q;
-        document.getElementById('cr-out-cash').innerText = "$" + res.toFixed(2);
-        document.getElementById('cr-out-r').innerText = (res / r).toFixed(2) + " R";
-    }
+        function calcOptions() {
+            const p = parseFloat(document.getElementById('opt-price').value) || 0;
+            const q = parseFloat(document.getElementById('opt-qty').value) || 0;
+            const side = document.getElementById('opt-side').value;
+            const rVal = parseFloat(document.getElementById('opt-r-val').value) || 1;
+            const slipPct = parseFloat(document.getElementById('opt-slip-pct').value) || 0;
+            const grossR = parseFloat(document.getElementById('opt-gross-r').value) || 0;
 
-    function copyThis(el) {
-        const text = el.innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            el.classList.add('copied');
-            setTimeout(() => el.classList.remove('copied'), 600);
-        });
-    }
-</script>
+            if (p === 0 || q === 0) return;
 
+            const turnover = p * q;
+            const brokerage = 60; 
+            const stt = 0.001 * turnover;
+            const txn = 0.0003503 * 2 * turnover;
+            const sebi = 0.000001 * 2 * turnover;
+            const stamp = 0.00003 * turnover;
+            const gst = 0.18 * (brokerage + sebi + txn);
+            
+            const charges = brokerage + stt + txn + sebi + gst + stamp;
+            const slippage = (slipPct / 100) * p * q;
+            const totalCostR = (charges / rVal) + (slippage / rVal);
+
+            const tpPoints = charges * 2;
+            const slPoints = charges / (q / 2);
+            let be = side === 'buy' ? p + (charges / q) : p - (charges / q);
+
+            document.getElementById('opt-res-charges').innerText = "₹ " + charges.toFixed(2);
+            document.getElementById('opt-res-slip').innerText = "₹ " + slippage.toFixed(2);
+            document.getElementById('opt-res-slip-r').innerText = (slippage / rVal).toFixed(2) + " R";
+            document.getElementById('opt-res-cost-r').innerText = totalCostR.toFixed(2) + " R";
+            document.getElementById('opt-res-net-r').innerText = (grossR - totalCostR).toFixed(2) + " R";
+            document.getElementById('opt-res-be').innerText = "₹ " + be.toFixed(2);
+            document.getElementById('opt-res-tp').innerText = tpPoints.toFixed(2);
+            document.getElementById('opt-res-sl').innerText = slPoints.toFixed(2);
+        }
+    </script>
 </body>
 </html>
