@@ -247,14 +247,15 @@
             if (p === 0 || q === 0) return;
 
             const turnover = p * q;
-            const brokerage = 60; 
+            const brokerage = 0; 
             const stt = 0.001 * turnover;
             const txn = 0.0003503 * 2 * turnover;
             const sebi = 0.000001 * 2 * turnover;
             const stamp = 0.00003 * turnover;
             const gst = 0.18 * (brokerage + sebi + txn);
+            const ipft = 0.0000059 * 2 * turnover
             
-            const charges = brokerage + stt + txn + sebi + gst + stamp;
+            const charges = brokerage + stt + txn + sebi + gst + stamp + ipft;
             const slippage = (slipPct / 100) * p * q;
             const totalCostR = (charges / rVal) + (slippage / rVal);
 
